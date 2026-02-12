@@ -1,0 +1,32 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "read": "allow",
+    "edit": "ask",
+    "bash": "ask",
+    "grep": "allow",
+    "glob": "allow",
+    "list": "allow",
+    "lsp": "allow",
+    "codesearch": "allow",
+    "websearch": "allow",
+    "external_directory": "allow",
+    "task": "allow",
+    "todoread": "allow",
+    "question": "allow",
+    "todowrite": "ask",
+    "webfetch": "allow"
+  },
+  "theme": "tokyonight",
+  "mcp": {
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "ctx7sk-aae0191a-2c0c-4855-aa42-dd804b001a5d"
+      },
+      "enabled": true
+    }
+  },
+  "lsp": {}
+}

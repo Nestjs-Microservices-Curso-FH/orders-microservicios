@@ -1,98 +1,147 @@
+# Orders Microservice
+
 <p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+  <a href="http://nestjs.com/" target="blank">
+    <img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" />
+  </a>
 </p>
-
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
-
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Microservicio de gestión de órdenes construido con **NestJS** que maneja el ciclo de vida completo de órdenes de compra. Se comunica mediante **TCP** y utiliza **PostgreSQL** con **Drizzle ORM**.
 
-## Project setup
+## Technologies
+
+- **NestJS** 11 - Framework progresivo de Node.js
+- **Drizzle ORM** 0.45 - ORM type-safe para PostgreSQL
+- **PostgreSQL** - Base de datos relacional
+- **TypeScript** 5.7 - Lenguaje de desarrollo
+- **Jest** 30 - Framework de testing
+- **Joi** 18 - Validación de esquemas
+
+## Available Scripts
+
+### Development
+
+| Command            | Description                              |
+| ------------------ | ---------------------------------------- |
+| `pnpm start`       | Inicia la aplicación en modo producción  |
+| `pnpm start:dev`   | Inicia en modo desarrollo con hot-reload |
+| `pnpm start:debug` | Inicia con debugger activado             |
+| `pnpm start:prod`  | Ejecuta la versión compilada en dist/    |
+
+### Build
+
+| Command      | Description                                   |
+| ------------ | --------------------------------------------- |
+| `pnpm build` | Compila la aplicación TypeScript a JavaScript |
+
+### Testing
+
+| Command           | Description                           |
+| ----------------- | ------------------------------------- |
+| `pnpm test`       | Ejecuta tests unitarios               |
+| `pnpm test:watch` | Ejecuta tests en modo watch           |
+| `pnpm test:cov`   | Genera reporte de cobertura           |
+| `pnpm test:debug` | Ejecuta tests con debugger de Node.js |
+| `pnpm test:e2e`   | Ejecuta tests end-to-end              |
+
+### Database (Drizzle Kit)
+
+| Command            | Description                                        |
+| ------------------ | -------------------------------------------------- |
+| `pnpm db:generate` | Genera archivos de migración SQL                   |
+| `pnpm db:migrate`  | Ejecuta migraciones pendientes en la base de datos |
+| `pnpm db:studio`   | Abre Drizzle Studio (UI para gestionar la BD)      |
+
+### Code Quality
+
+| Command       | Description                                        |
+| ------------- | -------------------------------------------------- |
+| `pnpm lint`   | Ejecuta ESLint con auto-fix en archivos TypeScript |
+| `pnpm format` | Formatea código con Prettier                       |
+
+## Installation
 
 ```bash
-$ pnpm install
+# Instalar dependencias
+pnpm install
+
+# Configurar variables de entorno
+cp .env.example .env
+# Editar .env con tus configuraciones
 ```
 
-## Compile and run the project
+## Environment Variables
 
-```bash
-# development
-$ pnpm run start
+Crear archivo `.env` con las siguientes variables:
 
-# watch mode
-$ pnpm run start:dev
+```env
+# Puerto del microservicio TCP
+PORT=3002
 
-# production mode
-$ pnpm run start:prod
+# URL de conexión a PostgreSQL
+DATABASE_URL=postgresql://username:password@localhost:5432/orders_db
 ```
 
-## Run tests
+## Usage
 
-```bash
-# unit tests
-$ pnpm run test
+Este microservicio funciona como **servidor TCP** y expone los siguientes patrones de mensajes:
 
-# e2e tests
-$ pnpm run test:e2e
+| Pattern         | Input                | Output         | Description                                                   |
+| --------------- | -------------------- | -------------- | ------------------------------------------------------------- |
+| `createOrder`   | `CreateOrderDto`     | Order          | Crea una nueva orden de compra                                |
+| `findAllOrders` | `PaginationOrderDto` | `{data, meta}` | Lista órdenes paginadas con filtro por estado                 |
+| `findOneOrder`  | `{id: string}`       | Order          | Obtiene una orden específica por UUID                         |
+| `changeStatus`  | `StatusOrderDto`     | Order          | Cambia el estado de una orden (PENDING, DELIVERED, CANCELLED) |
 
-# test coverage
-$ pnpm run test:cov
+### Order Status
+
+- `PENDING` - Orden pendiente de procesamiento
+- `DELIVERED` - Orden entregada
+- `CANCELLED` - Orden cancelada
+
+## Architecture
+
+```
+src/
+├── config/               # Configuración centralizada (envs)
+├── database/             # Módulo de base de datos (Drizzle + PostgreSQL)
+├── orders/               # Módulo principal de órdenes
+│   ├── dto/              # Data Transfer Objects
+│   ├── schema/           # Esquemas de Drizzle ORM
+│   ├── orders.controller.ts   # Controlador con MessagePatterns
+│   ├── orders.service.ts      # Lógica de negocio
+│   └── orders.module.ts       # Módulo de órdenes
+├── common/               # Recursos compartidos
+├── app.module.ts         # Módulo raíz
+└── main.ts              # Punto de entrada
 ```
 
-## Deployment
+### Database Schema
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+**orders** table:
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+- `id` (UUID, PK) - Identificador único
+- `total_amount` (REAL) - Monto total de la orden
+- `total_items` (INTEGER) - Cantidad total de items
+- `status` (ENUM) - Estado de la orden
+- `paid` (BOOLEAN) - Indica si está pagada
+- `paid_at` (TIMESTAMP) - Fecha de pago
+- `created_at` / `updated_at` (TIMESTAMP) - Timestamps automáticos
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
+**orderItems** table:
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+- `id` (UUID, PK) - Identificador único
+- `productId` (INTEGER) - ID del producto
+- `quantity` (INTEGER) - Cantidad comprada
+- `price` (REAL) - Precio unitario
+- `orderId` (UUID, FK) - Referencia a la orden
 
-## Resources
+## Author
 
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Your Name
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+UNLICENSED

@@ -1,1 +1,1 @@
-export { order, OrderStatus } from './schema';
+export { order, orderItem, OrderStatus } from './schema';

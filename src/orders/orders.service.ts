@@ -1,12 +1,19 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+
 import { HttpStatus, Inject, Injectable, Logger } from '@nestjs/common';
 import { CreateOrderDto, StatusOrderDto } from './dto';
 import { DATABASE_CONNECTION } from 'src/database/database-connection';
 
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { order as orderSchema } from './schema';
+import { order as orderSchema, orderItem as orderItemSchema } from './schema';
 import { and, eq, sql } from 'drizzle-orm';
-import { RpcException } from '@nestjs/microservices';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { PaginationOrderDto } from './dto/pagination-order.dto';
+import { PRODUCT_SERVICE } from 'src/config';
+import { catchError, firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class OrdersService {
@@ -14,22 +21,97 @@ export class OrdersService {
 
   constructor(
     @Inject(DATABASE_CONNECTION)
-    private readonly db: NodePgDatabase<{ orders: typeof orderSchema }>,
-  ) {}
+    private readonly db: NodePgDatabase<{
+      orders: typeof orderSchema;
+      orderItems: typeof orderItemSchema;
+    }>,
+
+    @Inject(PRODUCT_SERVICE)
+    private readonly productsClient: ClientProxy,
+  ) {
+    // super();
+  }
 
   async create(createOrderDto: CreateOrderDto) {
-    const { paid, ...restOrders } = createOrderDto;
-    const result = await this.db
-      .insert(orderSchema)
-      .values({
-        ...restOrders,
-        paid,
-        paidAt: paid ? new Date() : null,
-      })
-      .returning();
+    // 1.- Conformar los ids de los productos
+    const ids = createOrderDto.items.map((product) => product.productId);
+    const productsFinds = await firstValueFrom(
+      this.productsClient.send({ cmd: 'validate_products' }, ids).pipe(
+        catchError((err) => {
+          throw new RpcException(err);
+        }),
+      ),
+    );
 
-    this.logger.log(`Order create ${result[0].id}`);
-    return result[0];
+    // 2.- Calculo de los valores de los productos
+    const totalAmount = createOrderDto.items.reduce((acc, orderItem) => {
+      const price = productsFinds.find(
+        (product) => product.id === orderItem.productId,
+      ).price;
+      return acc + price * orderItem.quantity;
+    }, 0);
+
+    const totalItems = createOrderDto.items.reduce((acc, orderItem) => {
+      return acc + orderItem.quantity;
+    }, 0);
+
+    // 3.- Crear registro en base datos usando transacción
+    const { order, items } = await this.db.transaction(async (tx) => {
+      // Insertar orden
+      const [newOrder] = await tx
+        .insert(orderSchema)
+        .values({
+          status: 'PENDING',
+          totalAmount,
+          totalItems,
+        })
+        .returning();
+
+      // Insertar items de la orden
+      const orderItems = createOrderDto.items.map((item) => {
+        const product = productsFinds.find((p) => p.id === item.productId);
+        return {
+          orderId: newOrder.id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: product.price,
+        };
+      });
+
+      const insertedItems = await tx
+        .insert(orderItemSchema)
+        .values(orderItems)
+        .returning();
+
+      return { order: newOrder, items: insertedItems };
+    });
+
+    // Enriquecer items con datos de producto
+    const itemsWithProducts = items.map((item) => {
+      const product = productsFinds.find((p) => p.id === item.productId);
+      return {
+        id: item.id,
+        productId: item.productId,
+        name: product.name,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.price * item.quantity,
+      };
+    });
+
+    this.logger.log(`Order created with id: ${order.id}`);
+
+    return {
+      id: order.id,
+      status: order.status,
+      totalAmount: order.totalAmount,
+      totalItems: order.totalItems,
+      paid: order.paid,
+      paidAt: order.paidAt,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      items: itemsWithProducts,
+    };
   }
 
   async findAll(paginationDto: PaginationOrderDto) {
@@ -42,7 +124,7 @@ export class OrdersService {
         .from(orderSchema)
         .limit(limit)
         .offset(offset)
-        .where(eq(orderSchema.status, status)),
+        .where(eq(orderSchema.status, status.toString())),
       this.db
         .select({ count: sql<number>`count(*)` })
         .from(orderSchema)

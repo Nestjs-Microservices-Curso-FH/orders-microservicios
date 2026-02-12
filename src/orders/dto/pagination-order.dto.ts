@@ -9,5 +9,5 @@ export class PaginationOrderDto extends PartialType(PaginationDto) {
   @IsEnum(OrderStatus, {
     message: 'estatus: su valor es PENDING | DELIVERED | CANCELLED',
   })
-  status: OrderStatus;
+  status: OrderStatus = OrderStatus.PENDING;
 }
